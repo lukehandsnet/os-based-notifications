@@ -5,6 +5,7 @@ plugins {
 
 android {
     compileSdk 33
+    namespace "com.example.osnotifications"
 
     defaultConfig {
         applicationId "com.example.osnotifications"
