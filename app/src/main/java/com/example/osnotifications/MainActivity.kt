@@ -10,20 +10,14 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
-import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.RemoteInput
 import androidx.core.content.ContextCompat
 import com.example.osnotifications.databinding.ActivityMainBinding
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -241,51 +235,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showReplyNotification() {
-        val textInputLayout = TextInputLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                setMargins(32, 8, 32, 8)
-            }
-            hint = "Enter your message"
+        val replyLabel = "Enter your reply"
+        val remoteInput = RemoteInput.Builder(KEY_TEXT_REPLY)
+            .setLabel(replyLabel)
+            .build()
+
+        val intent = Intent(this, MainActivity::class.java)
+        val replyPendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_MUTABLE
+        )
+
+        val action = NotificationCompat.Action.Builder(
+            android.R.drawable.ic_menu_send,
+            "Reply",
+            replyPendingIntent
+        ).addRemoteInput(remoteInput).build()
+
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setContentTitle("Direct Reply Notification")
+            .setContentText("Tap reply to respond")
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .setColor(ContextCompat.getColor(this, R.color.primary))
+            .addAction(action)
+
+        try {
+            NotificationManagerCompat.from(this)
+                .notify(notificationId++, builder.build())
+        } catch (e: SecurityException) {
+            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
         }
-
-        val editText = TextInputEditText(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            setPadding(32, 16, 32, 16)
-        }
-
-        textInputLayout.addView(editText)
-
-        MaterialAlertDialogBuilder(this)
-            .setTitle("Send Message")
-            .setView(textInputLayout)
-            .setPositiveButton("Send") { _, _ ->
-                val message = editText.text?.toString()
-                if (!message.isNullOrBlank()) {
-                    val replyNotificationId = 3000 // Fixed ID for reply notification
-                    val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-                        .setSmallIcon(android.R.drawable.ic_dialog_email)
-                        .setContentTitle("Message Sent")
-                        .setContentText("Your message: $message")
-                        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                        .setColor(ContextCompat.getColor(this, R.color.primary))
-                        .setAutoCancel(true)
-
-                    try {
-                        NotificationManagerCompat.from(this)
-                            .notify(replyNotificationId, builder.build())
-                    } catch (e: SecurityException) {
-                        Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
     }
 
     private fun showNotification(notification: android.app.Notification) {
