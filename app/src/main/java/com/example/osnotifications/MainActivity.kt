@@ -140,24 +140,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showProgressNotification() {
+        val progressNotificationId = 1000 // Fixed ID for progress notification
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setSmallIcon(android.R.drawable.ic_download_manager)
             .setContentTitle("Download Progress")
             .setContentText("Download in progress")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
+            .setColor(ContextCompat.getColor(this, R.color.primary))
 
         CoroutineScope(Dispatchers.Main).launch {
-            for (progress in 0..100 step 10) {
-                builder.setProgress(100, progress, false)
-                builder.setContentText("Download in progress: $progress%")
-                showNotification(builder.build())
-                delay(500)
+            try {
+                with(NotificationManagerCompat.from(this@MainActivity)) {
+                    // Show indeterminate progress first
+                    builder.setProgress(0, 0, true)
+                    notify(progressNotificationId, builder.build())
+                    delay(1000) // Show indeterminate progress for 1 second
+
+                    // Show actual progress
+                    for (progress in 0..100 step 5) {
+                        builder.setProgress(100, progress, false)
+                            .setContentText("Download in progress: $progress%")
+                        notify(progressNotificationId, builder.build())
+                        delay(200)
+                    }
+
+                    // Show completion
+                    builder.setContentTitle("Download Complete")
+                        .setContentText("File downloaded successfully")
+                        .setProgress(0, 0, false)
+                        .setOngoing(false)
+                        .setAutoCancel(true)
+                    notify(progressNotificationId, builder.build())
+                }
+            } catch (e: SecurityException) {
+                Toast.makeText(this@MainActivity, "Notification permission denied", Toast.LENGTH_SHORT).show()
             }
-            builder.setContentText("Download complete")
-                .setProgress(0, 0, false)
-                .setOngoing(false)
-            showNotification(builder.build())
         }
     }
 
