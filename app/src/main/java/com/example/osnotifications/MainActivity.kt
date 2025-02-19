@@ -142,7 +142,7 @@ class MainActivity : AppCompatActivity() {
     private fun showProgressNotification() {
         val progressNotificationId = 1000 // Fixed ID for progress notification
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_download_manager)
+            .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentTitle("Download Progress")
             .setContentText("Download in progress")
             .setPriority(NotificationCompat.PRIORITY_LOW)
