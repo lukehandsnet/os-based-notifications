@@ -1,19 +1,34 @@
 package com.example.osnotifications
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.example.osnotifications.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private val CHANNEL_ID = "default"
     private var notificationId = 0
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            showNotification()
+        } else {
+            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -23,7 +38,21 @@ class MainActivity : AppCompatActivity() {
         createNotificationChannel()
 
         binding.btnShowNotification.setOnClickListener {
-            showNotification()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                when {
+                    ContextCompat.checkSelfPermission(
+                        this,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) == PackageManager.PERMISSION_GRANTED -> {
+                        showNotification()
+                    }
+                    else -> {
+                        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                }
+            } else {
+                showNotification()
+            }
         }
     }
 
@@ -48,8 +77,12 @@ class MainActivity : AppCompatActivity() {
             .setContentText("This is a test notification")
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
 
-        with(NotificationManagerCompat.from(this)) {
-            notify(notificationId++, builder.build())
+        try {
+            with(NotificationManagerCompat.from(this)) {
+                notify(notificationId++, builder.build())
+            }
+        } catch (e: SecurityException) {
+            Toast.makeText(this, "Notification permission denied", Toast.LENGTH_SHORT).show()
         }
     }
 }
